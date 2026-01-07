@@ -1,8 +1,8 @@
 include(CPM)
 CPMAddPackage(
   NAME open62541
-  VERSION 1.4.11
-  URL https://github.com/open62541/open62541/archive/refs/tags/v1.4.11.zip
+  VERSION 1.4.14
+  URL https://github.com/open62541/open62541/archive/refs/tags/v1.4.14.zip
   URL_HASH SHA256=3eeb9379d96df5c29ed00941c32e979932211f859b39ee6c862b6800179d258c
   OPTIONS
   	"UA_MULTITHREADING 100"
