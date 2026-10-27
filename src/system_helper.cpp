@@ -24,7 +24,12 @@
 #include <vector>
 
 #include "boost/asio.hpp"
+#include "boost/version.hpp"
+#if BOOST_VERSION >= 108600
+#include "boost/process/v1.hpp"
+#else
 #include "boost/process.hpp"
+#endif
 
 #ifdef ENABLE_SYSTEMD_STATUS
 #include <systemd/sd-daemon.h>
@@ -89,12 +94,16 @@ namespace bestsens {
 		}
 
 		auto pipeSystemCommand(const std::string &command) -> std::vector<std::string> {
+#if BOOST_VERSION >= 108600
+			namespace bp = boost::process::v1;
+#else
 			namespace bp = boost::process;
+#endif
 
 			const auto new_command = command + " 2>&1";	 // redirect stderr to stdout
 			const std::vector<std::string> args = {"-c", new_command};
 
-			boost::asio::io_service ios;
+			boost::asio::io_context ios;
 			bp::ipstream is;
 
 			const bp::child c(bp::search_path("sh"), args, bp::std_in.close(), bp::std_out > is, ios);

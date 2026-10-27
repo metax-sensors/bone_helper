@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <chrono>
 #include <cstring>
 #include <exception>
 #include <mutex>
@@ -29,7 +30,7 @@
 #include "boost/asio/ssl/context.hpp"
 #include "boost/asio/ssl/stream.hpp"
 #include "boost/asio/ssl/verify_mode.hpp"
-#include "boost/date_time/posix_time/posix_time_duration.hpp"
+#include "boost/asio/steady_timer.hpp"
 #include "boost/optional.hpp"
 #include "fmt/format.h"
 #include "fmt/ranges.h"
@@ -317,20 +318,19 @@ namespace bestsens {
 			}
 
 			tcp::resolver resolver(io_context);
-			const tcp::resolver::query query(this->conn_target, this->conn_port);
-			const tcp::resolver::iterator iterator = resolver.resolve(query);
+			const auto endpoints = resolver.resolve(this->conn_target, this->conn_port);
 
 			boost::optional<boost::system::error_code> timer_result;
-			boost::asio::deadline_timer timer(this->io_context);
-			timer.expires_from_now(boost::posix_time::milliseconds(this->timeout));
+			boost::asio::steady_timer timer(this->io_context);
+			timer.expires_after(std::chrono::milliseconds(this->timeout));
 			timer.async_wait([&timer_result](const boost::system::error_code& error) { timer_result.reset(error); });
 
 			boost::optional<boost::system::error_code> result;
-			boost::asio::async_connect(this->s, iterator,
+			boost::asio::async_connect(this->s, endpoints,
 									[this, &result](const boost::system::error_code& error,
-													const tcp::resolver::iterator& /*endpoint*/) { result.reset(error); });
+													const tcp::endpoint& /*endpoint*/) { result.reset(error); });
 
-			this->io_context.reset();
+			this->io_context.restart();
 			while (this->io_context.run_one() != 0u) {
 				if (result) {
 					timer.cancel();
@@ -366,8 +366,8 @@ namespace bestsens {
 			}
 
 			boost::optional<boost::system::error_code> timer_result;
-			boost::asio::deadline_timer timer(this->io_context);
-			timer.expires_from_now(boost::posix_time::milliseconds(this->timeout));
+			boost::asio::steady_timer timer(this->io_context);
+			timer.expires_after(std::chrono::milliseconds(this->timeout));
 			timer.async_wait([&timer_result](const boost::system::error_code& error) { timer_result.reset(error); });
 
 			size_t size{0};
@@ -379,7 +379,7 @@ namespace bestsens {
 										size = length;
 									});
 
-			this->io_context.reset();
+			this->io_context.restart();
 			while (this->io_context.run_one() != 0u) {
 				if (result) {
 					timer.cancel();
@@ -401,8 +401,8 @@ namespace bestsens {
 			}
 
 			boost::optional<boost::system::error_code> timer_result;
-			boost::asio::deadline_timer timer(this->io_context);
-			timer.expires_from_now(boost::posix_time::milliseconds(this->timeout));
+			boost::asio::steady_timer timer(this->io_context);
+			timer.expires_after(std::chrono::milliseconds(this->timeout));
 			timer.async_wait([&timer_result](const boost::system::error_code& error) { timer_result.reset(error); });
 
 			size_t size{0};
@@ -414,7 +414,7 @@ namespace bestsens {
 										size = length;
 									});
 
-			this->io_context.reset();
+			this->io_context.restart();
 			while (this->io_context.run_one() != 0u) {
 				if (result) {
 					timer.cancel();
@@ -447,20 +447,19 @@ namespace bestsens {
 			}
 
 			tcp::resolver resolver(io_context);
-			const tcp::resolver::query query(this->conn_target, this->conn_port);
-			const tcp::resolver::iterator iterator = resolver.resolve(query);
+			const auto endpoints = resolver.resolve(this->conn_target, this->conn_port);
 
 			boost::optional<boost::system::error_code> timer_result;
-			boost::asio::deadline_timer timer(this->io_context);
-			timer.expires_from_now(boost::posix_time::milliseconds(this->timeout));
+			boost::asio::steady_timer timer(this->io_context);
+			timer.expires_after(std::chrono::milliseconds(this->timeout));
 			timer.async_wait([&timer_result](const boost::system::error_code& error) { timer_result.reset(error); });
 
 			boost::optional<boost::system::error_code> result;
-			boost::asio::async_connect(this->s.lowest_layer(), iterator,
+			boost::asio::async_connect(this->s.lowest_layer(), endpoints,
 									[this, &result](const boost::system::error_code& error,
-													const tcp::resolver::iterator& /*endpoint*/) { result.reset(error); });
+													const tcp::endpoint& /*endpoint*/) { result.reset(error); });
 
-			this->io_context.reset();
+			this->io_context.restart();
 			while (this->io_context.run_one() != 0u) {
 				if (result) {
 					timer.cancel();
@@ -482,15 +481,15 @@ namespace bestsens {
 
 		auto netHelperSSL::handshake() -> void {
 			boost::optional<boost::system::error_code> timer_result;
-			boost::asio::deadline_timer timer(this->io_context);
-			timer.expires_from_now(boost::posix_time::milliseconds(this->timeout));
+			boost::asio::steady_timer timer(this->io_context);
+			timer.expires_after(std::chrono::milliseconds(this->timeout));
 			timer.async_wait([&timer_result](const boost::system::error_code& error) { timer_result.reset(error); });
 
 			boost::optional<boost::system::error_code> result;
 			this->s.async_handshake(boost::asio::ssl::stream_base::client,
 									[this, &result](const boost::system::error_code& error) { result.reset(error); });
 
-			this->io_context.reset();
+			this->io_context.restart();
 			while (this->io_context.run_one() != 0u) {
 				if (result) {
 					timer.cancel();
@@ -522,8 +521,8 @@ namespace bestsens {
 			}
 
 			boost::optional<boost::system::error_code> timer_result;
-			boost::asio::deadline_timer timer(this->io_context);
-			timer.expires_from_now(boost::posix_time::milliseconds(this->timeout));
+			boost::asio::steady_timer timer(this->io_context);
+			timer.expires_after(std::chrono::milliseconds(this->timeout));
 			timer.async_wait([&timer_result](const boost::system::error_code& error) { timer_result.reset(error); });
 
 			size_t size{0};
@@ -535,7 +534,7 @@ namespace bestsens {
 										size = length;
 									});
 
-			this->io_context.reset();
+			this->io_context.restart();
 			while (this->io_context.run_one() != 0u) {
 				if (result) {
 					timer.cancel();
@@ -557,8 +556,8 @@ namespace bestsens {
 			}
 
 			boost::optional<boost::system::error_code> timer_result;
-			boost::asio::deadline_timer timer(this->io_context);
-			timer.expires_from_now(boost::posix_time::milliseconds(this->timeout));
+			boost::asio::steady_timer timer(this->io_context);
+			timer.expires_after(std::chrono::milliseconds(this->timeout));
 			timer.async_wait([&timer_result](const boost::system::error_code& error) { timer_result.reset(error); });
 
 			size_t size{0};
@@ -570,7 +569,7 @@ namespace bestsens {
 										size = length;
 									});
 
-			this->io_context.reset();
+			this->io_context.restart();
 			while (this->io_context.run_one() != 0u) {
 				if (result) {
 					timer.cancel();
