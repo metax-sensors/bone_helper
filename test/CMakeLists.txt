@@ -1,8 +1,4 @@
-cmake_minimum_required(VERSION 3.24)
-
-if(POLICY CMP0167)
-	cmake_policy(SET CMP0167 NEW)
-endif()
+cmake_minimum_required(VERSION 3.24...3.30)
 
 find_package(Boost REQUIRED)
 

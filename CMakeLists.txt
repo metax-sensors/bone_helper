@@ -1,6 +1,6 @@
 project(bone_helper)
 
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.24...3.30)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -12,10 +12,6 @@ add_library(bone_helper STATIC EXCLUDE_FROM_ALL
 )
 
 target_compile_features(bone_helper PUBLIC cxx_std_23)
-
-if(POLICY CMP0167)
-	cmake_policy(SET CMP0167 NEW)
-endif()
 
 find_package(Boost REQUIRED filesystem)
 
