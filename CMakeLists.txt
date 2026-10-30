@@ -27,9 +27,14 @@ target_link_libraries(bone_helper PRIVATE
 target_link_libraries(bone_helper PUBLIC
 	ssl
 	crypto
-	atomic
 	${Boost_LIBRARIES}
 )
+
+# disable for targets without libatomic, a dependency on it then fails at link time instead of on the target
+option(LINK_LIBATOMIC "Link libatomic" ON)
+if(LINK_LIBATOMIC)
+	target_link_libraries(bone_helper PUBLIC atomic)
+endif()
 
 if(NOT STATIC_LINK_BINARY)
 	target_link_libraries(bone_helper PUBLIC ${CMAKE_DL_LIBS})

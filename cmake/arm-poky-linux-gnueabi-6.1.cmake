@@ -48,8 +48,12 @@ set(ENV{PKG_CONFIG_LIBDIR} "${CMAKE_SYSROOT}/usr/lib/pkgconfig:${CMAKE_SYSROOT}/
 add_compile_options("-mthumb;-mcpu=cortex-a9;-mfloat-abi=hard;-mfpu=neon;-pthread")
 add_compile_definitions(_TIME_BITS=64 _FILE_OFFSET_BITS=64)
 add_link_options("-mthumb;-mcpu=cortex-a9;-mfloat-abi=hard;-mfpu=neon;-pthread")
-# only depend on libraries that are actually used (e.g. libatomic is not installed on the target)
+# only depend on libraries that are actually used
 add_link_options("-Wl,--as-needed")
+
+# libatomic is not installed on the target, gcc would otherwise link it implicitly when needed
+add_link_options("-fno-link-libatomic")
+set(LINK_LIBATOMIC OFF)
 
 # the 6.1 sdk only ships a shared OpenSSL 4 in /usr, there is no static build in /opt/openssl-3 anymore
 set(SSL_DIR ${CMAKE_SYSROOT}/usr)
