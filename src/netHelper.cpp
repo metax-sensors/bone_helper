@@ -43,6 +43,39 @@ namespace bestsens {
 	namespace detail {
 		using boost::asio::ip::tcp;
 
+		namespace {
+			/*!
+				@brief	runs the io_context until the pending operation finished, cancels it if the timer expires
+				@throws	boost::system::system_error if the operation failed, timed out or the io_context was stopped
+			*/
+			template <typename Socket>
+			void run_until_done(boost::asio::io_context& io_context, Socket& socket, boost::asio::steady_timer& timer,
+								const boost::optional<boost::system::error_code>& result,
+								const boost::optional<boost::system::error_code>& timer_result) {
+				io_context.restart();
+				while (io_context.run_one() != 0u) {
+					if (result) {
+						timer.cancel();
+					} else if (timer_result) {
+						socket.cancel();
+					}
+				}
+
+				if (!result) {
+					// io_context was stopped before the operation finished, run the cancelled handlers now
+					// as they reference locals of the caller
+					socket.cancel();
+					timer.cancel();
+					io_context.restart();
+					io_context.run();
+				}
+
+				if (!result || *result) {
+					throw boost::system::system_error(result.value_or(boost::asio::error::operation_aborted));
+				}
+			}
+		}  // namespace
+
 		netHelper_base::netHelper_base(std::string conn_target, std::string conn_port, bool use_msgpack, bool silent)
 			: conn_target(std::move(conn_target)),
 			conn_port(std::move(conn_port)),
@@ -330,18 +363,7 @@ namespace bestsens {
 									[this, &result](const boost::system::error_code& error,
 													const tcp::endpoint& /*endpoint*/) { result.reset(error); });
 
-			this->io_context.restart();
-			while (this->io_context.run_one() != 0u) {
-				if (result) {
-					timer.cancel();
-				} else if (timer_result) {
-					this->s.cancel();
-				}
-			}
-
-			if (*result) {
-				throw boost::system::system_error(*result);
-			}
+			run_until_done(this->io_context, this->s, timer, result, timer_result);
 
 			this->connected = true;
 
@@ -379,18 +401,7 @@ namespace bestsens {
 										size = length;
 									});
 
-			this->io_context.restart();
-			while (this->io_context.run_one() != 0u) {
-				if (result) {
-					timer.cancel();
-				} else if (timer_result) {
-					this->s.cancel();
-				}
-			}
-
-			if (*result) {
-				throw boost::system::system_error(*result);
-			}
+			run_until_done(this->io_context, this->s, timer, result, timer_result);
 			
 			return static_cast<int>(size);
 		}
@@ -414,18 +425,7 @@ namespace bestsens {
 										size = length;
 									});
 
-			this->io_context.restart();
-			while (this->io_context.run_one() != 0u) {
-				if (result) {
-					timer.cancel();
-				} else if (timer_result) {
-					this->s.cancel();
-				}
-			}
-
-			if (*result) {
-				throw boost::system::system_error(*result);
-			}
+			run_until_done(this->io_context, this->s, timer, result, timer_result);
 
 			return static_cast<int>(size);
 		}
@@ -459,18 +459,7 @@ namespace bestsens {
 									[this, &result](const boost::system::error_code& error,
 													const tcp::endpoint& /*endpoint*/) { result.reset(error); });
 
-			this->io_context.restart();
-			while (this->io_context.run_one() != 0u) {
-				if (result) {
-					timer.cancel();
-				} else if (timer_result) {
-					this->s.lowest_layer().cancel();
-				}
-			}
-
-			if (*result) {
-				throw boost::system::system_error(*result);
-			}
+			run_until_done(this->io_context, this->s.lowest_layer(), timer, result, timer_result);
 
 			this->handshake();
 
@@ -489,18 +478,7 @@ namespace bestsens {
 			this->s.async_handshake(boost::asio::ssl::stream_base::client,
 									[this, &result](const boost::system::error_code& error) { result.reset(error); });
 
-			this->io_context.restart();
-			while (this->io_context.run_one() != 0u) {
-				if (result) {
-					timer.cancel();
-				} else if (timer_result) {
-					this->s.lowest_layer().cancel();
-				}
-			}
-
-			if (*result) {
-				throw boost::system::system_error(*result);
-			}
+			run_until_done(this->io_context, this->s.lowest_layer(), timer, result, timer_result);
 		}
 
 		void netHelperSSL::disconnect() {
@@ -534,18 +512,7 @@ namespace bestsens {
 										size = length;
 									});
 
-			this->io_context.restart();
-			while (this->io_context.run_one() != 0u) {
-				if (result) {
-					timer.cancel();
-				} else if (timer_result) {
-					this->s.lowest_layer().cancel();
-				}
-			}
-
-			if (*result) {
-				throw boost::system::system_error(*result);
-			}
+			run_until_done(this->io_context, this->s.lowest_layer(), timer, result, timer_result);
 
 			return static_cast<int>(size);
 		}
@@ -569,18 +536,7 @@ namespace bestsens {
 										size = length;
 									});
 
-			this->io_context.restart();
-			while (this->io_context.run_one() != 0u) {
-				if (result) {
-					timer.cancel();
-				} else if (timer_result) {
-					this->s.lowest_layer().cancel();
-				}
-			}
-
-			if (*result) {
-				throw boost::system::system_error(*result);
-			}
+			run_until_done(this->io_context, this->s.lowest_layer(), timer, result, timer_result);
 
 			return static_cast<int>(size);
 		}
